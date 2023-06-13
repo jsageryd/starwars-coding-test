@@ -1,80 +1,13 @@
-package main
+package core
 
 import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/jsageryd/starwars-coding-test/starwars"
 )
-
-func TestAPI_TopFatCharacters(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		var nextURL string
-
-		ts := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				switch path := r.URL.Path; path {
-				case "/people/":
-					w.Write([]byte(`
-{
-  "next": "` + nextURL + `",
-  "results": [
-    {"name":"Luke Skywalker","height":"172","mass":"77"},
-    {"name":"R2-D2","height":"96","mass":"32"}
-  ]
-}
-`))
-				case "/foo-next-page":
-					w.Write([]byte(`
-{
-  "results": [
-    {"name":"C-3PO","height":"167","mass":"75"}
-  ]
-}
-`))
-				default:
-					t.Fatalf("unexpected path: %s", path)
-				}
-			},
-		))
-
-		nextURL = ts.URL + "/foo-next-page"
-
-		a := &API{
-			Core: &Core{
-				SWAPIBaseURL: ts.URL,
-			},
-		}
-
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/", nil)
-
-		a.topFatCharacters(w, r)
-
-		if got, want := w.Code, http.StatusOK; got != want {
-			t.Errorf("got HTTP %d, want %d", got, want)
-		}
-
-		wantBody := `[{"name":"R2-D2","height":"96","mass":"32"},{"name":"C-3PO","height":"167","mass":"75"},{"name":"Luke Skywalker","height":"172","mass":"77"}]` + "\n"
-
-		if got, want := w.Body.String(), wantBody; got != want {
-			t.Errorf("got body:\n%s\nwant:\n%s", got, want)
-		}
-	})
-
-	t.Run("Wrong method", func(t *testing.T) {
-		a := &API{}
-
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodPut, "/", nil)
-
-		a.topFatCharacters(w, r)
-
-		if got, want := w.Code, http.StatusMethodNotAllowed; got != want {
-			t.Errorf("got HTTP %d, want %d", got, want)
-		}
-	})
-}
 
 func TestCore_TopFatCharacters(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
@@ -109,16 +42,14 @@ func TestCore_TopFatCharacters(t *testing.T) {
 
 		nextURL = ts.URL + "/foo-next-page"
 
-		c := &Core{
-			SWAPIBaseURL: ts.URL,
-		}
+		c := New(ts.URL)
 
-		gotCharacters, err := c.topFatCharacters()
+		gotCharacters, err := c.TopFatCharacters()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		wantCharacters := []Character{
+		wantCharacters := []starwars.Character{
 			{Name: "R2-D2", Height: 96, Mass: 32},
 			{Name: "C-3PO", Height: 167, Mass: 75},
 			{Name: "Luke Skywalker", Height: 172, Mass: 77},
@@ -132,7 +63,7 @@ func TestCore_TopFatCharacters(t *testing.T) {
 
 func TestTopFat(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		input := []Character{
+		input := []starwars.Character{
 			{Name: "Burly Bob", Height: 1.65, Mass: 118},         // BMI 24
 			{Name: "Hearty Hank", Height: 1.70, Mass: 102},       // BMI 22
 			{Name: "Middleweight Mitch", Height: 1.75, Mass: 88}, // BMI 20
@@ -143,7 +74,7 @@ func TestTopFat(t *testing.T) {
 
 		gotOutput := topFat(input, 3)
 
-		wantOutput := []Character{
+		wantOutput := []starwars.Character{
 			{Name: "Stocky Steve", Height: 1.63, Mass: 127}, // BMI 25
 			{Name: "Burly Bob", Height: 1.65, Mass: 118},    // BMI 24
 			{Name: "Plump Paul", Height: 1.68, Mass: 110},   // BMI 23
@@ -155,13 +86,13 @@ func TestTopFat(t *testing.T) {
 	})
 
 	t.Run("Character count less than limit", func(t *testing.T) {
-		input := []Character{
+		input := []starwars.Character{
 			{Name: "Burly Bob", Height: 1.65, Mass: 118}, // BMI 24
 		}
 
 		gotOutput := topFat(input, 3)
 
-		wantOutput := []Character{
+		wantOutput := []starwars.Character{
 			{Name: "Burly Bob", Height: 1.65, Mass: 118}, // BMI 24
 		}
 
