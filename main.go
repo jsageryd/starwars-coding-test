@@ -22,8 +22,11 @@ func main() {
 
 	go func() {
 		log.Printf("Warming up cache...")
-		swapiClient.People()
-		log.Printf("Cache warm")
+		if _, err := swapiClient.People(); err != nil {
+			log.Printf("Error warming up cache: %v", err)
+		} else {
+			log.Printf("Cache warm")
+		}
 	}()
 
 	addr := ":8080"
