@@ -12,11 +12,19 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
+	swapiClient := swapi.NewClient("https://swapi.dev/api")
+
 	api.New(
 		core.New(
-			swapi.NewClient("https://swapi.dev/api"),
+			swapiClient,
 		),
 	).Register(mux)
+
+	go func() {
+		log.Printf("Warming up cache...")
+		swapiClient.People()
+		log.Printf("Cache warm")
+	}()
 
 	addr := ":8080"
 
