@@ -7,7 +7,15 @@ Install [Go](https://go.dev) if you haven't.
 $ brew install go
 ```
 
-Run the server.
+### Tests
+Use `go test` to run tests.
+
+```
+$ go test -v ./...
+```
+
+### Run
+Compile and run using for example `go run`.
 
 ```
 $ go run main.go
