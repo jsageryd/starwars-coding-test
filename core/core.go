@@ -86,7 +86,7 @@ func topOld(cs []starwars.Character, n int) []starwars.Character {
 
 func numericBirthYear(year string) (float64, error) {
 	if len(year) < 4 {
-		return 0, fmt.Errorf("unknown birth date format: %s", year)
+		return 0, fmt.Errorf("unknown birth year format: %s", year)
 	}
 
 	numberStr := year[:len(year)-3]
@@ -94,7 +94,7 @@ func numericBirthYear(year string) (float64, error) {
 
 	number, err := strconv.ParseFloat(numberStr, 64)
 	if err != nil {
-		return 0, fmt.Errorf("unknown birth date format: %s", year)
+		return 0, fmt.Errorf("unknown birth year format: %s", year)
 	}
 
 	switch suffix {
@@ -103,6 +103,6 @@ func numericBirthYear(year string) (float64, error) {
 	case "ABY":
 		return number, nil
 	default:
-		return 0, fmt.Errorf("unknown birth date format: %s", year)
+		return 0, fmt.Errorf("unknown birth year format: %s", year)
 	}
 }

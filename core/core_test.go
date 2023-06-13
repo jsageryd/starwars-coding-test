@@ -255,7 +255,7 @@ func TestNumericBirthYear(t *testing.T) {
 				t.Fatal("error is nil")
 			}
 
-			if gotErrStr, wantPrefix := err.Error(), "unknown birth date format"; !strings.HasPrefix(gotErrStr, wantPrefix) {
+			if gotErrStr, wantPrefix := err.Error(), "unknown birth year format"; !strings.HasPrefix(gotErrStr, wantPrefix) {
 				t.Errorf("[%d] error is %q, want prefix %q", n, gotErrStr, wantPrefix)
 			}
 		}
