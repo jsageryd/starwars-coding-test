@@ -101,4 +101,24 @@ func TestClient_People(t *testing.T) {
 			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
 		}
 	})
+
+	t.Run("Non-OK response from API", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			},
+		))
+
+		c := NewClient(ts.URL)
+
+		_, err := c.People()
+
+		if err == nil {
+			t.Fatal("error is nil")
+		}
+
+		if got, want := err.Error(), "SWAPI returned HTTP 418"; got != want {
+			t.Errorf("error is %q, want %q", got, want)
+		}
+	})
 }

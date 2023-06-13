@@ -36,6 +36,10 @@ func (c *Client) People() ([]starwars.Character, error) {
 			return nil, fmt.Errorf("error querying SWAPI: %v", err)
 		}
 
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("SWAPI returned HTTP %d", resp.StatusCode)
+		}
+
 		var respBody struct {
 			Next    string               `json:"next"`
 			Results []starwars.Character `json:"results"`
