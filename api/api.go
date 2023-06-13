@@ -38,10 +38,18 @@ func New(core starwars.Core) *API {
 func (a *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/", a.ui)
 	mux.HandleFunc("/top-fat-characters", a.topFatCharacters)
+	mux.HandleFunc("/top-old-characters", a.topOldCharacters)
 }
 
 func (a *API) ui(w http.ResponseWriter, r *http.Request) {
-	characters, err := a.core.TopFatCharacters()
+	fattestCharacters, err := a.core.TopFatCharacters()
+	if err != nil {
+		http.Error(w, "unknown error", http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	oldestCharacters, err := a.core.TopOldCharacters()
 	if err != nil {
 		http.Error(w, "unknown error", http.StatusInternalServerError)
 		log.Println(err)
@@ -49,9 +57,11 @@ func (a *API) ui(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Characters []starwars.Character
+		FattestCharacters []starwars.Character
+		OldestCharacters  []starwars.Character
 	}{
-		Characters: characters,
+		FattestCharacters: fattestCharacters,
+		OldestCharacters:  oldestCharacters,
 	}
 
 	var buf bytes.Buffer
@@ -72,6 +82,24 @@ func (a *API) topFatCharacters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	characters, err := a.core.TopFatCharacters()
+	if err != nil {
+		http.Error(w, "unknown error", http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+
+	json.NewEncoder(w).Encode(&characters)
+}
+
+func (a *API) topOldCharacters(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	characters, err := a.core.TopOldCharacters()
 	if err != nil {
 		http.Error(w, "unknown error", http.StatusInternalServerError)
 		log.Println(err)

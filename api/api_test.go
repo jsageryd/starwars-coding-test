@@ -52,3 +52,46 @@ func TestAPI_TopFatCharacters(t *testing.T) {
 		}
 	})
 }
+
+func TestAPI_TopOldCharacters(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		a := New(
+			&mock.Core{
+				TopOldCharactersFunc: func() ([]starwars.Character, error) {
+					return []starwars.Character{
+						{Name: "Darth Vader", BirthYear: "41.9BBY"},
+						{Name: "Luke Skywalker", BirthYear: "19BBY"},
+					}, nil
+				},
+			},
+		)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+
+		a.topOldCharacters(w, r)
+
+		if got, want := w.Code, http.StatusOK; got != want {
+			t.Errorf("got HTTP %d, want %d", got, want)
+		}
+
+		wantBody := `[{"name":"Darth Vader","birth_year":"41.9BBY"},{"name":"Luke Skywalker","birth_year":"19BBY"}]` + "\n"
+
+		if got, want := w.Body.String(), wantBody; got != want {
+			t.Errorf("got body:\n%s\nwant:\n%s", got, want)
+		}
+	})
+
+	t.Run("Wrong method", func(t *testing.T) {
+		a := New(nil)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPut, "/", nil)
+
+		a.topOldCharacters(w, r)
+
+		if got, want := w.Code, http.StatusMethodNotAllowed; got != want {
+			t.Errorf("got HTTP %d, want %d", got, want)
+		}
+	})
+}

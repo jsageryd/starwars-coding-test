@@ -31,14 +31,39 @@ Date: Tue, 13 Jun 2023 09:17:07 GMT
 
 [
     {
+        "birth_year": "52BBY",
         "height": "178",
         "mass": "120",
         "name": "Owen Lars"
     },
     {
+        "birth_year": "15BBY",
         "height": "200",
         "mass": "140",
         "name": "IG-88"
+    },
+[...]
+```
+
+```
+$ http get :8080/top-old-characters
+HTTP/1.1 200 OK
+Content-Length: 1284
+Content-Type: application/json
+Date: Tue, 13 Jun 2023 13:57:38 GMT
+
+[
+    {
+        "birth_year": "112BBY",
+        "height": "167",
+        "mass": "75",
+        "name": "C-3PO"
+    },
+    {
+        "birth_year": "92BBY",
+        "height": "198",
+        "mass": "82",
+        "name": "Ki-Adi-Mundi"
     },
 [...]
 ```

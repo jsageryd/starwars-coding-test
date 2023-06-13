@@ -21,8 +21,8 @@ func TestClient_People(t *testing.T) {
 {
   "next": "` + nextURL + `",
   "results": [
-    {"name":"Luke Skywalker","height":"172","mass":"77"},
-    {"name":"R2-D2","height":"96","mass":"32"}
+    {"name":"Luke Skywalker","height":"172","mass":"77","birth_year":"19BBY"},
+    {"name":"R2-D2","height":"96","mass":"32","birth_year":"33BBY"}
   ]
 }
 `))
@@ -30,7 +30,7 @@ func TestClient_People(t *testing.T) {
 					w.Write([]byte(`
 {
   "results": [
-    {"name":"C-3PO","height":"167","mass":"75"}
+    {"name":"C-3PO","height":"167","mass":"75","birth_year":"112BBY"}
   ]
 }
 `))
@@ -50,9 +50,9 @@ func TestClient_People(t *testing.T) {
 		}
 
 		wantCharacters := []starwars.Character{
-			{Name: "Luke Skywalker", Height: 172, Mass: 77},
-			{Name: "R2-D2", Height: 96, Mass: 32},
-			{Name: "C-3PO", Height: 167, Mass: 75},
+			{Name: "Luke Skywalker", Height: 172, Mass: 77, BirthYear: "19BBY"},
+			{Name: "R2-D2", Height: 96, Mass: 32, BirthYear: "33BBY"},
+			{Name: "C-3PO", Height: 167, Mass: 75, BirthYear: "112BBY"},
 		}
 
 		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {
@@ -70,7 +70,7 @@ func TestClient_People(t *testing.T) {
 				w.Write([]byte(`
 {
   "results": [
-    {"name":"C-3PO","height":"167","mass":"75"}
+    {"name":"C-3PO","height":"167","mass":"75","birth_year":"112BBY"}
   ]
 }
 `))
@@ -94,7 +94,7 @@ func TestClient_People(t *testing.T) {
 		}
 
 		wantCharacters := []starwars.Character{
-			{Name: "C-3PO", Height: 167, Mass: 75},
+			{Name: "C-3PO", Height: 167, Mass: 75, BirthYear: "112BBY"},
 		}
 
 		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {

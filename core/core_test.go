@@ -47,6 +47,42 @@ func TestCore_TopFatCharacters(t *testing.T) {
 	})
 }
 
+func TestCore_TopOldCharacters(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`
+{
+  "results": [
+    {"name":"Luke Skywalker","birth_year":"19BBY"},
+    {"name":"Darth Vader","birth_year":"41.9BBY"},
+    {"name":"R5-D4","birth_year":"unknown"}
+  ]
+}
+`))
+			},
+		))
+
+		c := New(
+			swapi.NewClient(ts.URL),
+		)
+
+		gotCharacters, err := c.TopOldCharacters()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		wantCharacters := []starwars.Character{
+			{Name: "Darth Vader", BirthYear: "41.9BBY"},
+			{Name: "Luke Skywalker", BirthYear: "19BBY"},
+		}
+
+		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {
+			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
+		}
+	})
+}
+
 func TestTopFat(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		input := []starwars.Character{
@@ -84,6 +120,88 @@ func TestTopFat(t *testing.T) {
 
 		if fmt.Sprint(gotOutput) != fmt.Sprint(wantOutput) {
 			t.Errorf("got %v, want %v", gotOutput, wantOutput)
+		}
+	})
+}
+
+func TestTopOld(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		input := []starwars.Character{
+			{Name: "Ben Solo", BirthYear: "5ABY"},
+			{Name: "Darth Vader", BirthYear: "41.9BBY"},
+			{Name: "Leia Skywalker", BirthYear: "19BBY"},
+			{Name: "Luke Skywalker", BirthYear: "19BBY"},
+			{Name: "R5-D4", BirthYear: "unknown"},
+			{Name: "Rey", BirthYear: "15ABY"},
+		}
+
+		gotOutput := topOld(input, 4)
+
+		wantOutput := []starwars.Character{
+			{Name: "Darth Vader", BirthYear: "41.9BBY"},
+			{Name: "Leia Skywalker", BirthYear: "19BBY"},
+			{Name: "Luke Skywalker", BirthYear: "19BBY"},
+			{Name: "Ben Solo", BirthYear: "5ABY"},
+		}
+
+		if fmt.Sprint(gotOutput) != fmt.Sprint(wantOutput) {
+			t.Errorf("got %v, want %v", gotOutput, wantOutput)
+		}
+	})
+
+	t.Run("Character count less than limit", func(t *testing.T) {
+		input := []starwars.Character{
+			{Name: "Ben Solo", BirthYear: "5ABY"},
+		}
+
+		gotOutput := topOld(input, 3)
+
+		wantOutput := []starwars.Character{
+			{Name: "Ben Solo", BirthYear: "5ABY"},
+		}
+
+		if fmt.Sprint(gotOutput) != fmt.Sprint(wantOutput) {
+			t.Errorf("got %v, want %v", gotOutput, wantOutput)
+		}
+	})
+}
+
+func TestAbsBirthYear(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		for n, tc := range []struct {
+			input string
+			want  float64
+		}{
+			{"20BBY", -20},
+			{"10.5BBY", -10.5},
+			{"1BBY", -1},
+			{"0BBY", 0},
+			{"0ABY", 0},
+			{"1ABY", 1},
+			{"10.5ABY", 10.5},
+			{"20ABY", 20},
+		} {
+			gotYear, err := absBirthYear(tc.input)
+			if err != nil {
+				t.Errorf("[%d] unexpected error: %v", n, err)
+				continue
+			}
+
+			if gotYear != tc.want {
+				t.Errorf("[%d] absBirthYear(%q) = %f, want %f", n, tc.input, gotYear, tc.want)
+			}
+		}
+	})
+
+	t.Run("Unknown year format", func(t *testing.T) {
+		_, err := absBirthYear("foo-unknown-format")
+
+		if err == nil {
+			t.Fatal("error is nil")
+		}
+
+		if gotErrStr, wantErrStr := err.Error(), "unknown birth date format: foo-unknown-format"; gotErrStr != wantErrStr {
+			t.Errorf("error is %q, want %q", gotErrStr, wantErrStr)
 		}
 	})
 }
