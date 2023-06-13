@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -10,7 +11,9 @@ import (
 
 func main() {
 	a := API{
-		SWAPIBaseURL: "https://swapi.dev/api",
+		Core: &Core{
+			SWAPIBaseURL: "https://swapi.dev/api",
+		},
 	}
 
 	http.HandleFunc("/top-fat-characters", a.topFatCharacters)
@@ -22,26 +25,19 @@ func main() {
 	http.ListenAndServe(addr, nil)
 }
 
-type API struct {
+type Core struct {
 	SWAPIBaseURL string
 }
 
-func (a *API) topFatCharacters(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
-
+func (c *Core) topFatCharacters() ([]Character, error) {
 	var characters []Character
 
-	nextURL := strings.TrimRight(a.SWAPIBaseURL, "/") + "/people/"
+	nextURL := strings.TrimRight(c.SWAPIBaseURL, "/") + "/people/"
 
 	for nextURL != "" {
 		resp, err := http.Get(nextURL)
 		if err != nil {
-			http.Error(w, "unknown error", http.StatusInternalServerError)
-			log.Printf("Error querying SWAPI: %v", err)
-			return
+			return nil, fmt.Errorf("error querying SWAPI: %v", err)
 		}
 
 		var respBody struct {
@@ -50,9 +46,7 @@ func (a *API) topFatCharacters(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-			http.Error(w, "unknown error", http.StatusInternalServerError)
-			log.Printf("Error reading SWAPI response: %v", err)
-			return
+			return nil, fmt.Errorf("error reading SWAPI response: %v", err)
 		}
 
 		characters = append(characters, respBody.Results...)
@@ -60,7 +54,25 @@ func (a *API) topFatCharacters(w http.ResponseWriter, r *http.Request) {
 		nextURL = respBody.Next
 	}
 
-	characters = topFat(characters, 20)
+	return topFat(characters, 20), nil
+}
+
+type API struct {
+	Core *Core
+}
+
+func (a *API) topFatCharacters(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	characters, err := a.Core.topFatCharacters()
+	if err != nil {
+		http.Error(w, "unknown error", http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
 
 	w.Header().Set("content-type", "application/json")
 

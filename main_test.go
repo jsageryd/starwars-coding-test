@@ -41,7 +41,9 @@ func TestAPI_TopFatCharacters(t *testing.T) {
 		nextURL = ts.URL + "/foo-next-page"
 
 		a := &API{
-			SWAPIBaseURL: ts.URL,
+			Core: &Core{
+				SWAPIBaseURL: ts.URL,
+			},
 		}
 
 		w := httptest.NewRecorder()
@@ -70,6 +72,60 @@ func TestAPI_TopFatCharacters(t *testing.T) {
 
 		if got, want := w.Code, http.StatusMethodNotAllowed; got != want {
 			t.Errorf("got HTTP %d, want %d", got, want)
+		}
+	})
+}
+
+func TestCore_TopFatCharacters(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		var nextURL string
+
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				switch path := r.URL.Path; path {
+				case "/people/":
+					w.Write([]byte(`
+{
+  "next": "` + nextURL + `",
+  "results": [
+    {"name":"Luke Skywalker","height":"172","mass":"77"},
+    {"name":"R2-D2","height":"96","mass":"32"}
+  ]
+}
+`))
+				case "/foo-next-page":
+					w.Write([]byte(`
+{
+  "results": [
+    {"name":"C-3PO","height":"167","mass":"75"}
+  ]
+}
+`))
+				default:
+					t.Fatalf("unexpected path: %s", path)
+				}
+			},
+		))
+
+		nextURL = ts.URL + "/foo-next-page"
+
+		c := &Core{
+			SWAPIBaseURL: ts.URL,
+		}
+
+		gotCharacters, err := c.topFatCharacters()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		wantCharacters := []Character{
+			{Name: "R2-D2", Height: 96, Mass: 32},
+			{Name: "C-3PO", Height: 167, Mass: 75},
+			{Name: "Luke Skywalker", Height: 172, Mass: 77},
+		}
+
+		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {
+			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
 		}
 	})
 }
