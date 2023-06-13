@@ -7,42 +7,28 @@ import (
 	"testing"
 
 	"github.com/jsageryd/starwars-coding-test/starwars"
+	"github.com/jsageryd/starwars-coding-test/swapi"
 )
 
 func TestCore_TopFatCharacters(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		var nextURL string
-
 		ts := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				switch path := r.URL.Path; path {
-				case "/people/":
-					w.Write([]byte(`
+				w.Write([]byte(`
 {
-  "next": "` + nextURL + `",
   "results": [
     {"name":"Luke Skywalker","height":"172","mass":"77"},
-    {"name":"R2-D2","height":"96","mass":"32"}
-  ]
-}
-`))
-				case "/foo-next-page":
-					w.Write([]byte(`
-{
-  "results": [
+    {"name":"R2-D2","height":"96","mass":"32"},
     {"name":"C-3PO","height":"167","mass":"75"}
   ]
 }
 `))
-				default:
-					t.Fatalf("unexpected path: %s", path)
-				}
 			},
 		))
 
-		nextURL = ts.URL + "/foo-next-page"
-
-		c := New(ts.URL)
+		c := New(
+			swapi.NewClient(ts.URL),
+		)
 
 		gotCharacters, err := c.TopFatCharacters()
 		if err != nil {
@@ -53,48 +39,6 @@ func TestCore_TopFatCharacters(t *testing.T) {
 			{Name: "R2-D2", Height: 96, Mass: 32},
 			{Name: "C-3PO", Height: 167, Mass: 75},
 			{Name: "Luke Skywalker", Height: 172, Mass: 77},
-		}
-
-		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {
-			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
-		}
-	})
-
-	t.Run("Caching", func(t *testing.T) {
-		var gotReqCount int
-
-		ts := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				gotReqCount++
-
-				w.Write([]byte(`
-{
-  "results": [
-    {"name":"C-3PO","height":"167","mass":"75"}
-  ]
-}
-`))
-			},
-		))
-
-		c := New(ts.URL)
-
-		var gotCharacters []starwars.Character
-		var err error
-
-		for n := 0; n < 2; n++ {
-			gotCharacters, err = c.TopFatCharacters()
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-		}
-
-		if got, want := gotReqCount, 1; got != want {
-			t.Errorf("set %d requests, want %d", got, want)
-		}
-
-		wantCharacters := []starwars.Character{
-			{Name: "C-3PO", Height: 167, Mass: 75},
 		}
 
 		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {

@@ -6,13 +6,16 @@ import (
 
 	"github.com/jsageryd/starwars-coding-test/api"
 	"github.com/jsageryd/starwars-coding-test/core"
+	"github.com/jsageryd/starwars-coding-test/swapi"
 )
 
 func main() {
 	mux := http.NewServeMux()
 
 	api.New(
-		core.New("https://swapi.dev/api"),
+		core.New(
+			swapi.NewClient("https://swapi.dev/api"),
+		),
 	).Register(mux)
 
 	addr := ":8080"

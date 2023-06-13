@@ -1,61 +1,30 @@
 package core
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
-	"strings"
 
 	"github.com/jsageryd/starwars-coding-test/starwars"
+	"github.com/jsageryd/starwars-coding-test/swapi"
 )
 
 type Core struct {
-	cache        *cache
-	swapiBaseURL string
+	swapiClient *swapi.Client
 }
 
-func New(swapiBaseURL string) *Core {
+func New(client *swapi.Client) *Core {
 	return &Core{
-		cache:        newCache(),
-		swapiBaseURL: strings.TrimRight(swapiBaseURL, "/"),
+		swapiClient: client,
 	}
 }
 
 func (c *Core) TopFatCharacters() ([]starwars.Character, error) {
-	if cs, ok := c.cache.GetCharacters(); ok {
-		return cs, nil
+	characters, err := c.swapiClient.People()
+	if err != nil {
+		return nil, fmt.Errorf("error fetching characters from SWAPI: %v", err)
 	}
 
-	var characters []starwars.Character
-
-	nextURL := c.swapiBaseURL + "/people/"
-
-	for nextURL != "" {
-		resp, err := http.Get(nextURL)
-		if err != nil {
-			return nil, fmt.Errorf("error querying SWAPI: %v", err)
-		}
-
-		var respBody struct {
-			Next    string               `json:"next"`
-			Results []starwars.Character `json:"results"`
-		}
-
-		if json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-			return nil, fmt.Errorf("error reading SWAPI response: %v", err)
-		}
-
-		characters = append(characters, respBody.Results...)
-
-		nextURL = respBody.Next
-	}
-
-	characters = topFat(characters, 20)
-
-	c.cache.SetCharacters(characters)
-
-	return characters, nil
+	return topFat(characters, 20), nil
 }
 
 // topFat returns the top N fattest characters according to their BMI.
