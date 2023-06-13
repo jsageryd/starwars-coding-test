@@ -215,7 +215,7 @@ func TestTopOld(t *testing.T) {
 	})
 }
 
-func TestAbsBirthYear(t *testing.T) {
+func TestNumericBirthYear(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		for n, tc := range []struct {
 			input string
@@ -230,14 +230,14 @@ func TestAbsBirthYear(t *testing.T) {
 			{"10.5ABY", 10.5},
 			{"20ABY", 20},
 		} {
-			gotYear, err := absBirthYear(tc.input)
+			gotYear, err := numericBirthYear(tc.input)
 			if err != nil {
 				t.Errorf("[%d] unexpected error: %v", n, err)
 				continue
 			}
 
 			if gotYear != tc.want {
-				t.Errorf("[%d] absBirthYear(%q) = %f, want %f", n, tc.input, gotYear, tc.want)
+				t.Errorf("[%d] numericBirthYear(%q) = %f, want %f", n, tc.input, gotYear, tc.want)
 			}
 		}
 	})
@@ -249,7 +249,7 @@ func TestAbsBirthYear(t *testing.T) {
 			"3foo",
 			"unknown",
 		} {
-			_, err := absBirthYear(input)
+			_, err := numericBirthYear(input)
 
 			if err == nil {
 				t.Fatal("error is nil")

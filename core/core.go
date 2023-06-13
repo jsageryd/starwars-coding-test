@@ -61,14 +61,14 @@ func topOld(cs []starwars.Character, n int) []starwars.Character {
 
 	// Skip the ones with a birth year we cannot parse
 	for _, c := range cs {
-		if _, err := absBirthYear(c.BirthYear); err == nil {
+		if _, err := numericBirthYear(c.BirthYear); err == nil {
 			validCs = append(validCs, c)
 		}
 	}
 
 	sort.Slice(validCs, func(i, j int) bool {
-		a, _ := absBirthYear(validCs[i].BirthYear)
-		b, _ := absBirthYear(validCs[j].BirthYear)
+		a, _ := numericBirthYear(validCs[i].BirthYear)
+		b, _ := numericBirthYear(validCs[j].BirthYear)
 
 		if a == b {
 			return validCs[i].Name < validCs[j].Name
@@ -84,7 +84,7 @@ func topOld(cs []starwars.Character, n int) []starwars.Character {
 	return validCs
 }
 
-func absBirthYear(year string) (float64, error) {
+func numericBirthYear(year string) (float64, error) {
 	if len(year) < 4 {
 		return 0, fmt.Errorf("unknown birth date format: %s", year)
 	}
