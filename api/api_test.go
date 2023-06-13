@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,6 +37,25 @@ func TestAPI_TopFatCharacters(t *testing.T) {
 
 		if got, want := w.Body.String(), wantBody; got != want {
 			t.Errorf("got body:\n%s\nwant:\n%s", got, want)
+		}
+	})
+
+	t.Run("Error from core", func(t *testing.T) {
+		a := New(
+			&mock.Core{
+				TopFatCharactersFunc: func() ([]starwars.Character, error) {
+					return nil, errors.New("foo error")
+				},
+			},
+		)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+
+		a.topFatCharacters(w, r)
+
+		if got, want := w.Code, http.StatusInternalServerError; got != want {
+			t.Errorf("got HTTP %d, want %d", got, want)
 		}
 	})
 
@@ -79,6 +99,25 @@ func TestAPI_TopOldCharacters(t *testing.T) {
 
 		if got, want := w.Body.String(), wantBody; got != want {
 			t.Errorf("got body:\n%s\nwant:\n%s", got, want)
+		}
+	})
+
+	t.Run("Error from core", func(t *testing.T) {
+		a := New(
+			&mock.Core{
+				TopOldCharactersFunc: func() ([]starwars.Character, error) {
+					return nil, errors.New("foo error")
+				},
+			},
+		)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+
+		a.topOldCharacters(w, r)
+
+		if got, want := w.Code, http.StatusInternalServerError; got != want {
+			t.Errorf("got HTTP %d, want %d", got, want)
 		}
 	})
 

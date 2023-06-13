@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/jsageryd/starwars-coding-test/starwars"
@@ -45,6 +46,30 @@ func TestCore_TopFatCharacters(t *testing.T) {
 			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
 		}
 	})
+
+	t.Run("Non-OK response from API", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			},
+		))
+
+		c := New(
+			swapi.NewClient(ts.URL),
+		)
+
+		_, err := c.TopFatCharacters()
+
+		if err == nil {
+			t.Fatal("error is nil")
+		}
+
+		wantErrStr := "error fetching characters from SWAPI: SWAPI returned HTTP 418"
+
+		if got, want := err.Error(), wantErrStr; got != want {
+			t.Errorf("err is %q, want %q", got, want)
+		}
+	})
 }
 
 func TestCore_TopOldCharacters(t *testing.T) {
@@ -79,6 +104,30 @@ func TestCore_TopOldCharacters(t *testing.T) {
 
 		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {
 			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
+		}
+	})
+
+	t.Run("Non-OK response from API", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			},
+		))
+
+		c := New(
+			swapi.NewClient(ts.URL),
+		)
+
+		_, err := c.TopOldCharacters()
+
+		if err == nil {
+			t.Fatal("error is nil")
+		}
+
+		wantErrStr := "error fetching characters from SWAPI: SWAPI returned HTTP 418"
+
+		if got, want := err.Error(), wantErrStr; got != want {
+			t.Errorf("err is %q, want %q", got, want)
 		}
 	})
 }
@@ -194,14 +243,21 @@ func TestAbsBirthYear(t *testing.T) {
 	})
 
 	t.Run("Unknown year format", func(t *testing.T) {
-		_, err := absBirthYear("foo-unknown-format")
+		for n, input := range []string{
+			"",
+			"foo",
+			"3foo",
+			"unknown",
+		} {
+			_, err := absBirthYear(input)
 
-		if err == nil {
-			t.Fatal("error is nil")
-		}
+			if err == nil {
+				t.Fatal("error is nil")
+			}
 
-		if gotErrStr, wantErrStr := err.Error(), "unknown birth date format: foo-unknown-format"; gotErrStr != wantErrStr {
-			t.Errorf("error is %q, want %q", gotErrStr, wantErrStr)
+			if gotErrStr, wantPrefix := err.Error(), "unknown birth date format"; !strings.HasPrefix(gotErrStr, wantPrefix) {
+				t.Errorf("[%d] error is %q, want prefix %q", n, gotErrStr, wantPrefix)
+			}
 		}
 	})
 }
