@@ -10,13 +10,13 @@
         </tr>
       </thead>
       <tbody>
-      {{range .FattestCharacters}}
-      <tr>
-        <td>{{.Name}}</td>
-        <td>{{.Height}}</td>
-        <td>{{.Mass}}</td>
-      </tr>
-      {{end}}
+        {{range .FattestCharacters}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>{{.Height}}</td>
+          <td>{{.Mass}}</td>
+        </tr>
+        {{end}}
       </tbody>
     </table>
     <h2>20 oldest Starwars characters by birth year</h2>
@@ -28,12 +28,12 @@
         </tr>
       </thead>
       <tbody>
-      {{range .OldestCharacters}}
-      <tr>
-        <td>{{.Name}}</td>
-        <td>{{.BirthYear}}</td>
-      </tr>
-      {{end}}
+        {{range .OldestCharacters}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>{{.BirthYear}}</td>
+        </tr>
+        {{end}}
       </tbody>
     </table>
   </body>
