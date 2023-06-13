@@ -59,6 +59,48 @@ func TestCore_TopFatCharacters(t *testing.T) {
 			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
 		}
 	})
+
+	t.Run("Caching", func(t *testing.T) {
+		var gotReqCount int
+
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				gotReqCount++
+
+				w.Write([]byte(`
+{
+  "results": [
+    {"name":"C-3PO","height":"167","mass":"75"}
+  ]
+}
+`))
+			},
+		))
+
+		c := New(ts.URL)
+
+		var gotCharacters []starwars.Character
+		var err error
+
+		for n := 0; n < 2; n++ {
+			gotCharacters, err = c.TopFatCharacters()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		}
+
+		if got, want := gotReqCount, 1; got != want {
+			t.Errorf("set %d requests, want %d", got, want)
+		}
+
+		wantCharacters := []starwars.Character{
+			{Name: "C-3PO", Height: 167, Mass: 75},
+		}
+
+		if fmt.Sprint(gotCharacters) != fmt.Sprint(wantCharacters) {
+			t.Errorf("got %v, want %v", gotCharacters, wantCharacters)
+		}
+	})
 }
 
 func TestTopFat(t *testing.T) {

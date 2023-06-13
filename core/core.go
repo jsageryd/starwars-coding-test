@@ -11,16 +11,22 @@ import (
 )
 
 type Core struct {
+	cache        *cache
 	swapiBaseURL string
 }
 
 func New(swapiBaseURL string) *Core {
 	return &Core{
+		cache:        newCache(),
 		swapiBaseURL: strings.TrimRight(swapiBaseURL, "/"),
 	}
 }
 
 func (c *Core) TopFatCharacters() ([]starwars.Character, error) {
+	if cs, ok := c.cache.GetCharacters(); ok {
+		return cs, nil
+	}
+
 	var characters []starwars.Character
 
 	nextURL := c.swapiBaseURL + "/people/"
@@ -45,7 +51,11 @@ func (c *Core) TopFatCharacters() ([]starwars.Character, error) {
 		nextURL = respBody.Next
 	}
 
-	return topFat(characters, 20), nil
+	characters = topFat(characters, 20)
+
+	c.cache.SetCharacters(characters)
+
+	return characters, nil
 }
 
 // topFat returns the top N fattest characters according to their BMI.
