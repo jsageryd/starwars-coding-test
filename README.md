@@ -14,7 +14,13 @@ $ go run main.go
 2023/06/13 11:16:05 Listening at :8080...
 ```
 
-Send a request (example uses [HTTPie](https://httpie.io/)).
+Run the UI in a browser...
+
+```
+$ open http://localhost:8080/
+```
+
+...or send an API request (example uses [HTTPie](https://httpie.io/)).
 
 ```
 $ http get :8080/top-fat-characters

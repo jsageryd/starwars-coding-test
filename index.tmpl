@@ -1,0 +1,23 @@
+<html>
+  <body>
+    <h2>20 fattest Starwars characters by BMI</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Height</th>
+          <th>Mass</th>
+        </tr>
+      </thead>
+      <tbody>
+      {{range .Characters}}
+      <tr>
+        <td>{{.Name}}</td>
+        <td>{{.Height}}</td>
+        <td>{{.Mass}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </body>
+</html>

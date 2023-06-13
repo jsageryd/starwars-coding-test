@@ -1,13 +1,30 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
 )
+
+//go:embed index.tmpl
+var index string
+
+var tmpl *template.Template
+
+func init() {
+	var err error
+
+	tmpl, err = template.New("index").Parse(index)
+	if err != nil {
+		log.Fatalf("Error parsing template: %v", err)
+	}
+}
 
 func main() {
 	a := API{
@@ -16,6 +33,7 @@ func main() {
 		},
 	}
 
+	http.HandleFunc("/", a.ui)
 	http.HandleFunc("/top-fat-characters", a.topFatCharacters)
 
 	addr := ":8080"
@@ -59,6 +77,31 @@ func (c *Core) topFatCharacters() ([]Character, error) {
 
 type API struct {
 	Core *Core
+}
+
+func (a *API) ui(w http.ResponseWriter, r *http.Request) {
+	characters, err := a.Core.topFatCharacters()
+	if err != nil {
+		http.Error(w, "unknown error", http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	data := struct {
+		Characters []Character
+	}{
+		Characters: characters,
+	}
+
+	var buf bytes.Buffer
+
+	if err := tmpl.Execute(&buf, data); err != nil {
+		http.Error(w, "Error rendering page", http.StatusInternalServerError)
+		log.Printf("Error rendering page: %v", err)
+		return
+	}
+
+	buf.WriteTo(w)
 }
 
 func (a *API) topFatCharacters(w http.ResponseWriter, r *http.Request) {
