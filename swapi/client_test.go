@@ -11,22 +11,21 @@ import (
 
 func TestClient_People(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		var nextURL string
-
 		ts := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				switch path := r.URL.Path; path {
-				case "/people/":
+				t.Logf("page is %q", r.URL.Query().Get("page"))
+				switch page := r.URL.Query().Get("page"); page {
+				case "1":
 					w.Write([]byte(`
 {
-  "next": "` + nextURL + `",
+  "count": 3,
   "results": [
     {"name":"Luke Skywalker","height":"172","mass":"77","birth_year":"19BBY"},
     {"name":"R2-D2","height":"96","mass":"32","birth_year":"33BBY"}
   ]
 }
 `))
-				case "/foo-next-page":
+				case "2":
 					w.Write([]byte(`
 {
   "results": [
@@ -35,12 +34,10 @@ func TestClient_People(t *testing.T) {
 }
 `))
 				default:
-					t.Fatalf("unexpected path: %s", path)
+					t.Fatalf("unexpected page: %s", page)
 				}
 			},
 		))
-
-		nextURL = ts.URL + "/foo-next-page"
 
 		c := NewClient(ts.URL)
 
@@ -112,6 +109,77 @@ func TestClient_People(t *testing.T) {
 		c := NewClient(ts.URL)
 
 		_, err := c.People()
+
+		if err == nil {
+			t.Fatal("error is nil")
+		}
+
+		if got, want := err.Error(), "SWAPI returned HTTP 418"; got != want {
+			t.Errorf("error is %q, want %q", got, want)
+		}
+	})
+}
+
+func TestClient_FetchPeople(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		var gotPath string
+		var gotRawQuery string
+
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				gotRawQuery = r.URL.RawQuery
+
+				w.Write([]byte(`
+{
+  "count": 2,
+  "results": [
+    {"name":"Luke Skywalker","height":"172","mass":"77","birth_year":"19BBY"},
+    {"name":"R2-D2","height":"96","mass":"32","birth_year":"33BBY"}
+  ]
+}
+`))
+			},
+		))
+
+		c := NewClient(ts.URL)
+
+		gotResp, err := c.fetchPeople(3)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		wantResp := peopleResponse{
+			Count: 2,
+			Results: []starwars.Character{
+				{Name: "Luke Skywalker", Height: 172, Mass: 77, BirthYear: "19BBY"},
+				{Name: "R2-D2", Height: 96, Mass: 32, BirthYear: "33BBY"},
+			},
+		}
+
+		if got, want := gotPath, "/people/"; got != want {
+			t.Errorf("got path %q, want %q", got, want)
+		}
+
+		if got, want := gotRawQuery, "page=3"; got != want {
+			t.Errorf("got raw query %q, want %q", got, want)
+		}
+
+		if fmt.Sprint(gotResp) != fmt.Sprint(wantResp) {
+			t.Errorf("got %v, want %v", gotResp, wantResp)
+		}
+	})
+
+	t.Run("Non-OK response from API", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			},
+		))
+
+		c := NewClient(ts.URL)
+
+		_, err := c.fetchPeople(3)
 
 		if err == nil {
 			t.Fatal("error is nil")

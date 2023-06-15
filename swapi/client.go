@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/jsageryd/starwars-coding-test/starwars"
 )
@@ -26,35 +27,86 @@ func (c *Client) People() ([]starwars.Character, error) {
 		return cs, nil
 	}
 
-	var characters []starwars.Character
+	pr, err := c.fetchPeople(1)
+	if err != nil {
+		return nil, err
+	}
 
-	nextURL := c.baseURL + "/people/"
+	if len(pr.Results) == 0 {
+		return nil, nil
+	}
 
-	for nextURL != "" {
-		resp, err := http.Get(nextURL)
-		if err != nil {
-			return nil, fmt.Errorf("error querying SWAPI: %v", err)
+	characters := pr.Results
+
+	pageCount := pr.Count/len(pr.Results) + 1
+
+	type ret struct {
+		pr  peopleResponse
+		err error
+	}
+
+	in := make(chan int, pageCount-1)
+	out := make(chan ret)
+
+	for page := 2; page <= pageCount; page++ {
+		in <- page
+	}
+	close(in)
+
+	workers := 10
+	if workers > pageCount-1 {
+		workers = pageCount
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(workers)
+
+	for n := 0; n < workers; n++ {
+		go func() {
+			defer wg.Done()
+
+			for page := range in {
+				pr, err := c.fetchPeople(page)
+				out <- ret{pr, err}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	for r := range out {
+		if r.err != nil {
+			return nil, r.err
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("SWAPI returned HTTP %d", resp.StatusCode)
-		}
-
-		var respBody struct {
-			Next    string               `json:"next"`
-			Results []starwars.Character `json:"results"`
-		}
-
-		if json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-			return nil, fmt.Errorf("error reading SWAPI response: %v", err)
-		}
-
-		characters = append(characters, respBody.Results...)
-
-		nextURL = respBody.Next
+		characters = append(characters, r.pr.Results...)
 	}
 
 	c.cache.SetCharacters(characters)
 
 	return characters, nil
+}
+
+func (c *Client) fetchPeople(page int) (peopleResponse, error) {
+	pageURL := fmt.Sprintf("%s/people/?page=%d", c.baseURL, page)
+
+	resp, err := http.Get(pageURL)
+	if err != nil {
+		return peopleResponse{}, fmt.Errorf("error querying SWAPI: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return peopleResponse{}, fmt.Errorf("SWAPI returned HTTP %d", resp.StatusCode)
+	}
+
+	var pr peopleResponse
+
+	if json.NewDecoder(resp.Body).Decode(&pr); err != nil {
+		return peopleResponse{}, fmt.Errorf("error reading SWAPI response: %v", err)
+	}
+
+	return pr, nil
 }
